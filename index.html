@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "<i>Cycas</i> এর কোন প্রজাতির পাতা চর্মরোগ উপশমে ব্যবহৃত হয়?",
+          options: {
+            a: "<i>Cycas circinalis</i>",
+            b: "<i>Cycas indica</i>",
+            c: "<i>Cycas pectinata</i>",
+            d: "<i>Cycas revoluta</i>",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas circinalis</i> প্রজাতির পাতা ঐতিহ্যগতভাবে চর্মরোগ উপশমে ব্যবহৃত হয়। এর পাতার রস বা পেস্ট ত্বকের বিভিন্ন সমস্যায় লাগানো হয়।",
+        },
+        {
+          id: 2,
+          question: "'<i>Cycas</i>' উদ্ভিদের সস্য নিচের কোন ধরনের?",
+          options: {
+            a: "হ্যাপ্লয়েড",
+            b: "ট্রিপ্লয়েড",
+            c: "পলিপ্লয়েড",
+            d: "ডিপ্লয়েড",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদের সস্য (endosperm) হ্যাপ্লয়েড (n) প্রকৃতির। এটি নিষেকের পূর্বে স্ত্রী গ্যামেটোফাইট থেকে তৈরি হয় এবং ডিম্বাণুর নিষিক্তকরণের পর ভ্রূণের পুষ্টি সরবরাহ করে। আবৃতবীজী উদ্ভিদের সস্য ট্রিপ্লয়েড (3n) হয়।",
+        },
+        {
+          id: 3,
+          question: "<i>Cycas</i> উদ্ভিদের সস্য কোন ধরনের?",
+          options: {
+            a: "হ্যাপ্লয়েড",
+            b: "ডিপ্লয়েড",
+            c: "বিপ্লয়েড",
+            d: "টেট্রাপ্লয়েড",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদের সস্য হ্যাপ্লয়েড (n) প্রকৃতির। এটি স্ত্রী গ্যামেটোফাইটের অংশ এবং নিষেকের পূর্বে গঠিত হয়।",
+        },
+        {
+          id: 4,
+          question: "কোনটি সাইকাস (<i>Cycas</i>) উদ্ভিদের বৈশিষ্ট্য?",
+          options: {
+            a: "কাণ্ড শাখা-প্রশাখা যুক্ত",
+            b: "গ্যামেটোফাইট বিদ্যমান",
+            c: "সমরেণু প্রসূ",
+            d: "পক্ষল যৌগিক পত্র বিশিষ্ট",
+          },
+          correct: "d",
+          explanation:
+            "সাইকাস (<i>Cycas</i>) উদ্ভিদের একটি অন্যতম বৈশিষ্ট্য হলো এর পক্ষল যৌগিক পত্র (pinnately compound leaves) বিদ্যমান। এর কাণ্ড সাধারণত অশাখিত থাকে, স্পোরোফাইট প্রধান উদ্ভিদ দেহ এবং এটি বিষমরেণুপ্রসূ (heterosporous), অর্থাৎ মেগাস্পোর ও মাইক্রোস্পোর উৎপন্ন করে। গ্যামেটোফাইট স্পোরোফাইটের উপর নির্ভরশীল।",
+        },
+        {
+          id: 5,
+          question: "<i>Cycas</i> উদ্ভিদের শুক্রাণু কীরূপ?",
+          options: {
+            a: "এক ফ্ল্যাজেলাযুক্ত",
+            b: "দ্বি-ফ্ল্যাজেলাযুক্ত",
+            c: "বহু-ফ্ল্যাজেলাযুক্ত",
+            d: "ফ্ল্যাজেলাবিহীন",
+          },
+          correct: "c",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদের শুক্রাণু বহু-ফ্ল্যাজেলাযুক্ত এবং আকারে উদ্ভিদকুলের মধ্যে বৃহত্তম। এদের অসংখ্য ফ্ল্যাজেলা সর্পিলভাবে সজ্জিত থাকে যা এদের চলাচল করতে সাহায্য করে।",
+        },
+        {
+          id: 6,
+          question: "নিচের কোন উদ্ভিদে কোরালয়েড মূল বিদ্যমান?",
+          options: {
+            a: "<i>Urena lobata</i>",
+            b: "<i>Cycas pectinata</i>",
+            c: "<i>Cynodon dactylon</i>",
+            d: "<i>Bambusa bambos</i>",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas pectinata</i> সহ <i>Cycas</i> গণের অন্যান্য প্রজাতিতে কোরালয়েড মূল বিদ্যমান। এই বিশেষ ধরনের মূলে সায়ানোব্যাকটেরিয়া (যেমন <i>Anabaena</i>) বসবাস করে এবং নাইট্রোজেন সংবন্ধনে সাহায্য করে। <i>Urena lobata</i>, <i>Cynodon dactylon</i> ও <i>Bambusa bambos</i> আবৃতবীজী উদ্ভিদ এবং এদের কোরালয়েড মূল নেই।",
+        },
+        {
+          id: 7,
+          question: "সাইকাসের মেগাস্পোরোফিলের দৈর্ঘ্য কত?",
+          options: {
+            a: "১৫-২০ সেমি",
+            b: "২৫-৩০ সেমি",
+            c: "৩৫-৪০ সেমি",
+            d: "০৫-১০ সেমি",
+          },
+          correct: "a",
+          explanation:
+            "সাইকাসের মেগাস্পোরোফিলের দৈর্ঘ্য সাধারণত ১৫-২০ সেন্টিমিটার পর্যন্ত হতে পারে। মেগাস্পোরোফিল হলো স্ত্রী রেণুপত্র যা ডিম্বক বহন করে।",
+        },
+        {
+          id: 8,
+          question: "কোন যুগে সাইকাস উদ্ভিদের ব্যাপক বিস্তৃতি ঘটেছিল?",
+          options: {
+            a: "জুরাসিক",
+            b: "মেসোজোয়িক",
+            c: "সিনোজোয়িক",
+            d: "টারসিয়ারি",
+          },
+          correct: "a",
+          explanation:
+            "জুরাসিক যুগে সাইকাস উদ্ভিদের ব্যাপক বিস্তৃতি ঘটেছিল। এই যুগকে 'ফার্ন ও সাইকাসের স্বর্ণযুগ' বলা হয় কারণ তখন পৃথিবীতে এদের প্রাচুর্য ছিল। মেসোজোয়িক যুগেও এদের প্রাধান্য ছিল, কিন্তু জুরাসিক ছিল এদের উন্নতির শিখর।",
+        },
+        {
+          id: 9,
+          question:
+            "লাইটিকো-বডিগ রোগটি কোন উদ্ভিদজাত খাদ্য ভক্ষণের সাথে সম্পৃক্ত?",
+          options: {
+            a: "আলু",
+            b: "সাইকাস",
+            c: "ধান",
+            d: "পিঁয়াজ",
+          },
+          correct: "b",
+          explanation:
+            "লাইটিকো-বডিগ রোগটি সাইকাস উদ্ভিদজাত খাদ্য ভক্ষণের সাথে সম্পৃক্ত। সাইকাসের বীজ এবং কাণ্ডে নিউরোটক্সিন থাকে যা সঠিকভাবে প্রক্রিয়াজাত না করে খেলে এই রোগ হতে পারে।",
+        },
+        {
+          id: 10,
+          question: "কোরালয়েড মূলে বাস করে কোনটি?",
+          options: {
+            a: "<i>Anabaena</i>",
+            b: "<i>Ulothrix</i>",
+            c: "<i>Clostridium</i>",
+            d: "<i>Navicula</i>",
+          },
+          correct: "a",
+          explanation:
+            "কোরালয়েড মূলে <i>Anabaena</i> নামক সায়ানোব্যাকটেরিয়া বাস করে। এটি মিথোজীবী সম্পর্কে আবদ্ধ থাকে এবং নাইট্রোজেন সংবন্ধনে সাহায্য করে যা <i>Cycas</i> উদ্ভিদের জন্য গুরুত্বপূর্ণ। <i>Ulothrix</i> একটি শৈবাল, <i>Clostridium</i> একটি ব্যাকটেরিয়া এবং <i>Navicula</i> একটি ডায়াটম।",
+        },
+        {
+          id: 11,
+          question:
+            "<i>Cycas</i>-এর স্ট্রোবিলাস বা স্টামিনেট কোন দ্বারা গঠিত হয়?",
+          options: {
+            a: "শঙ্কপত্র",
+            b: "পুংরেণুপত্র",
+            c: "পর্ণপত্র",
+            d: "স্ত্রীরেণুপত্র",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas</i>-এর স্ট্রোবিলাস বা স্টামিনেট (পুরুষ শংকু) পুংরেণুপত্র (microsporophyll) দ্বারা গঠিত হয়। প্রতিটি পুংরেণুপত্রে অসংখ্য মাইক্রোস্পোরাঞ্জিয়া থাকে যার মধ্যে মাইক্রোস্পোর (পরাগরেণু) উৎপন্ন হয়। শঙ্কপত্র সাধারণত বীজবাহী কাঠামোর সাথে যুক্ত, পর্ণপত্র হলো সাধারণ পাতা এবং স্ত্রীরেণুপত্র মেগাস্পোরোফিল বহন করে।",
+        },
+        {
+          id: 12,
+          question:
+            "কোন প্রজাতির <i>Cycas</i> চট্টগ্রামের পাহাড়ি অঞ্চলে দেখা যায়?",
+          options: {
+            a: "<i>Cycas pectinata</i>",
+            b: "<i>Podocarpus neriifolius</i>",
+            c: "<i>Gnetum montanum</i>",
+            d: "<i>Cycas revoluta</i>",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas pectinata</i> প্রজাতির <i>Cycas</i> চট্টগ্রামের পাহাড়ি অঞ্চলে দেখা যায়। এটি বাংলাদেশের স্থানীয় প্রজাতি। <i>Podocarpus neriifolius</i> ও <i>Gnetum montanum</i> ও বাংলাদেশে পাওয়া যায় তবে <i>Cycas revoluta</i> মূলত পূর্ব এশিয়ার প্রজাতি।",
+        },
+        {
+          id: 13,
+          question: "<i>Cycas</i>-এর পুংস্ট্রোবিলাস এর দৈর্ঘ্য কত?",
+          options: {
+            a: "প্রায় ৫০ সেমি",
+            b: "প্রায় ১০০ সেমি",
+            c: "প্রায় ৭০ সেমি",
+            d: "প্রায় ১৫০ সেমি",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i>-এর পুংস্ট্রোবিলাস (পুরুষ শংকু) এর দৈর্ঘ্য সাধারণত প্রায় ৫০ সেন্টিমিটার পর্যন্ত হতে পারে। এটি কাণ্ডের অগ্রভাগে উৎপন্ন হয় এবং অসংখ্য পুংরেণুপত্র ধারণ করে।",
+        },
+        {
+          id: 14,
+          question: "<i>Cycas</i>-এর ডিম্বাণু সৃষ্টি হয় কোন অংশ থেকে?",
+          options: {
+            a: "স্ট্যামিনেট",
+            b: "আর্কিগোনিয়াম",
+            c: "ডিম্বক",
+            d: "অ্যান্থেরিডিয়াম",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas</i>-এর ডিম্বাণু সৃষ্টি হয় আর্কিগোনিয়াম থেকে। আর্কিগোনিয়াম হলো স্ত্রী জননাঙ্গ যা মেগাস্পোরোফিলের উপর অবস্থিত ডিম্বকের মধ্যে গঠিত হয়। স্ট্যামিনেট হলো পুরুষ শংকু, ডিম্বক হলো বীজ গঠনকারী কাঠামো এবং অ্যান্থেরিডিয়াম হলো পুরুষ জননাঙ্গ যেখানে শুক্রাণু তৈরি হয়।",
+        },
+        {
+          id: 15,
+          question: "<i>Cycas</i> উদ্ভিদের প্রধান দেহটি কোন ধরনের?",
+          options: {
+            a: "হ্যাপ্লয়েড",
+            b: "ডিপ্লয়েড",
+            c: "প্লিয়েড",
+            d: "পলিপ্লয়েড",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদের প্রধান দেহটি হলো ডিপ্লয়েড (2n) স্পোরোফাইট। হ্যাপ্লয়েড গ্যামেটোফাইট স্পোরোফাইটের উপর নির্ভরশীল এবং স্বল্পস্থায়ী।",
+        },
+        {
+          id: 16,
+          question: "স্পোরাঞ্জিয়া একত্রিত হয়ে কী গঠন করে?",
+          options: {
+            a: "স্পোর",
+            b: "স্ট্রোবিলাস",
+            c: "সোরাস",
+            d: "মেগাস্পোর",
+          },
+          correct: "b",
+          explanation:
+            "নগ্নবীজী উদ্ভিদে স্পোরাঞ্জিয়া একত্রিত হয়ে **স্ট্রোবিলাস** (শংকু) গঠন করে। সোরাস মূলত ফার্নের ক্ষেত্রে প্রযোজ্য। স্পোর হলো জনন রেণু এবং মেগাস্পোর হলো স্ত্রী রেণু।",
+        },
+        {
+          id: 17,
+          question: "কোন উদ্ভিদের যৌন জননে মেগাস্পোর ও মাইক্রোস্পোর তৈরি হয়?",
+          options: {
+            a: "শৈবাল",
+            b: "ছত্রাক",
+            c: "সাইকাস",
+            d: "মস",
+          },
+          correct: "c",
+          explanation:
+            "সাইকাস (<i>Cycas</i>) হলো একটি বিষমরেণুপ্রসূ (heterosporous) উদ্ভিদ, যার যৌন জননে মেগাস্পোর (স্ত্রী রেণু) ও মাইক্রোস্পোর (পুরুষ রেণু বা পরাগরেণু) তৈরি হয়। শৈবাল সাধারণত সমরেণুপ্রসূ (homosporous) হতে পারে এবং ছত্রাকের জনন প্রক্রিয়া ভিন্ন। মস সাধারণত সমরেণুপ্রসূ।",
+        },
+        {
+          id: 18,
+          question: "<i>Cycas</i> এর শুক্রাণুর আকৃতি কীরূপ?",
+          options: {
+            a: "বয়লাকার",
+            b: "মোচাকৃতির",
+            c: "লাটিমাকৃতির",
+            d: "পেয়ালাকৃতির",
+          },
+          correct: "c",
+          explanation:
+            "<i>Cycas</i> এর শুক্রাণুর আকৃতি লাটিমাকৃতির (top-shaped) এবং এটি বহু ফ্ল্যাজেলাযুক্ত।",
+        },
+        {
+          id: 19,
+          question: "পাম ফার্ন বলা হয় কোন উদ্ভিদকে?",
+          options: {
+            a: "<i>Thuja</i>",
+            b: "<i>Pteris</i>",
+            c: "<i>Gnetum</i>",
+            d: "<i>Cycas</i>",
+          },
+          correct: "d",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদকে পাম ফার্ন বলা হয় কারণ এর পাতা অনেকটা পাম গাছের পাতার মতো এবং এর বাহ্যিক গঠন ফার্নের মতো হলেও এটি আসলে নগ্নবীজী উদ্ভিদ। <i>Thuja</i> একটি নগ্নবীজী, <i>Pteris</i> একটি ফার্ন এবং <i>Gnetum</i> আরেকটি নগ্নবীজী উদ্ভিদ।",
+        },
+        {
+          id: 20,
+          question: "সাইকাসের পাতা কয় ধরনের?",
+          options: {
+            a: "১",
+            b: "২",
+            c: "৩",
+            d: "৪",
+          },
+          correct: "b",
+          explanation:
+            "সাইকাসের পাতা প্রধানত দুই ধরনের: ১) সবুজ আত্তীকরণকারী পাতা (green assimilatory leaves) যা সালোকসংশ্লেষণে অংশগ্রহণ করে এবং ২) বাদামী শল্কপত্র (brown scale leaves) যা কাণ্ড ও কচি পাতা আবৃত রাখে এবং সুরক্ষা প্রদান করে। কিছু প্রজাতিতে ক্যাটাপিল (cataphylls) নামক তৃতীয় ধরনের ছোট পাতা দেখা যায়, তবে প্রধানত দুই ধরনের পাতাই পরিচিত।",
+        },
+        {
+          id: 21,
+          question: "উদ্ভিদকুলের মধ্যে সর্ববৃহৎ শুক্রাণু কোন উদ্ভিদে?",
+          options: {
+            a: "<i>Riccia</i>",
+            b: "<i>Gnetum</i>",
+            c: "<i>Cycas</i>",
+            d: "<i>Pteris</i>",
+          },
+          correct: "c",
+          explanation:
+            "উদ্ভিদকুলের মধ্যে সর্ববৃহৎ শুক্রাণু <i>Cycas</i> উদ্ভিদে দেখা যায়। এদের শুক্রাণু বহু ফ্ল্যাজেলাযুক্ত এবং খালি চোখেও আংশিকভাবে দৃশ্যমান হতে পারে। <i>Riccia</i> একটি ব্রায়োফাইট, <i>Gnetum</i> একটি নগ্নবীজী এবং <i>Pteris</i> একটি ফার্ন।",
+        },
+        {
+          id: 22,
+          question: "<i>Cycas</i>-এর ডিম্বাণু তৈরির সঠিক ধারাক্রম কোনটি?",
+          options: {
+            a: "ডিম্বক → স্ত্রীরেণু মাতৃকোষ → স্ত্রীরেণু → ডিম্বাণু",
+            b: "ডিম্বক → আর্কিগোনিয়াম → স্ত্রীরেণু → ডিম্বাণু",
+            c: "ডিম্বক → স্ত্রীরেণু মাতৃকোষ → স্ত্রীরেণু → আর্কিগোনিয়াম → ডিম্বাণু",
+            d: "আর্কিগোনিয়াম → ডিম্বক → স্ত্রীরেণু → ডিম্বাণু",
+          },
+          correct: "c",
+          explanation:
+            "<i>Cycas</i>-এর ডিম্বাণু তৈরির সঠিক ধারাক্রম হলো: ডিম্বক → স্ত্রীরেণু মাতৃকোষ (মেগাস্পোর মাদার সেল) → স্ত্রীরেণু (মেগাস্পোর) → আর্কিগোনিয়াম (স্ত্রী জননাঙ্গ যার মধ্যে ডিম্বাণু থাকে) → ডিম্বাণু (ডিম্বাণু)।",
+        },
+        {
+          id: 23,
+          question: "নিচের কোনটিকে জীবন্ত জীবাশ্ম বলা হয়?",
+          options: {
+            a: "<i>Cycas</i>",
+            b: "<i>Moss</i>",
+            c: "<i>Fungi</i>",
+            d: "<i>Fern</i>",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদকে জীবন্ত জীবাশ্ম বলা হয় কারণ এটি প্রাচীন উদ্ভিদ গোষ্ঠীর অন্তর্ভুক্ত এবং লক্ষ লক্ষ বছর ধরে এর বাহ্যিক গঠনে তেমন কোনো পরিবর্তন ঘটেনি। <i>Moss</i> (মস) ব্রায়োফাইট, <i>Fungi</i> (ছত্রাক) ভিন্ন রাজ্যের এবং <i>Fern</i> (ফার্ন) টেরিডোফাইট।",
+        },
+        {
+          id: 24,
+          question: "<i>Cycas</i> এর মূল দেহ কোন ধরনের?",
+          options: {
+            a: "গ্যামেটোফাইটিক",
+            b: "স্পোরোফাইটিক",
+            c: "থ্যালোফাইটিক",
+            d: "ব্রায়োফাইটিক",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas</i> এর প্রধান উদ্ভিদ দেহ হলো স্পোরোফাইটিক (ডিপ্লয়েড)। গ্যামেটোফাইট স্পোরোফাইটের উপর নির্ভরশীল এবং স্বল্পস্থায়ী। থ্যালোফাইটিক দেহ শৈবাল ও ছত্রাকের মতো এবং ব্রায়োফাইটিক দেহ মসের মতো।",
+        },
+        {
+          id: 25,
+          question: "কোরালয়েড মূলে কোনটি পাওয়া যায়?",
+          options: {
+            a: "<i>Nostoc</i>",
+            b: "<i>Clostridium</i>",
+            c: "<i>Rhizobium</i>",
+            d: "<i>E.coli</i>",
+          },
+          correct: "a",
+          explanation:
+            "কোরালয়েড মূলে <i>Nostoc</i> নামক সায়ানোব্যাকটেরিয়া পাওয়া যায়। এটি মিথোজীবী সম্পর্কে আবদ্ধ থাকে এবং নাইট্রোজেন সংবন্ধনে সাহায্য করে। <i>Clostridium</i> একটি ব্যাকটেরিয়া যা অবাত পরিবেশে জন্মায়, <i>Rhizobium</i> লেগুমিনাস উদ্ভিদের মূলে নাইট্রোজেন সংবন্ধনে সাহায্য করে এবং <i>E.coli</i> মানুষের অন্ত্রে বসবাসকারী একটি ব্যাকটেরিয়া।",
+        },
+        {
+          id: 26,
+          question: "নিচের কোনটি <i>Cycas</i> এর বৈশিষ্ট্য?",
+          options: {
+            a: "সমরেণুপ্রসূত",
+            b: "যৌগিক পত্র",
+            c: "ট্রিপ্লয়েড সস্য",
+            d: "গ্যামেটোফাইটিক",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas</i> এর বৈশিষ্ট্য হলো এর **যৌগিক পত্র** (পক্ষল যৌগিক পত্র) বিদ্যমান। এটি বিষমরেণুপ্রসূত (হেটারোস্পোরাস), এর সস্য হ্যাপ্লয়েড এবং প্রধান উদ্ভিদ দেহ স্পোরোফাইটিক।",
+        },
+        {
+          id: 27,
+          question: "নিচের কোন উদ্ভিদে ফুল হয় কিন্তু ফল হয় না?",
+          options: {
+            a: "<i>Hibiscus rosa-sinensis</i>",
+            b: "<i>Cycas pectinata</i>",
+            c: "<i>Oryza sativa</i>",
+            d: "<i>Riccia discolor</i>",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas pectinata</i> (এবং অন্যান্য নগ্নবীজী উদ্ভিদ) তে ফুল হয় না (কারণ এদেরকে অপুষ্পক বলা হয়), তবে ফলও হয় না কারণ এদের ডিম্বক উন্মুক্ত থাকে এবং গর্ভাশয় অনুপস্থিত। <i>Hibiscus rosa-sinensis</i> (জবা) ও <i>Oryza sativa</i> (ধান) আবৃতবীজী উদ্ভিদ এবং এদের ফুল ও ফল দুটোই হয়। <i>Riccia discolor</i> একটি ব্রায়োফাইট এবং এতে ফুল বা ফল কিছুই হয় না।",
+        },
+        {
+          id: 28,
+          question: "<i>Cycas</i> এর শুক্রাণুর ক্ষেত্রে প্রযোজ্য কোনটি?",
+          options: {
+            a: "বৃহৎ ও ফ্ল্যাজেলাবিহীন",
+            b: "ক্ষুদ্র ও ফ্ল্যাজেলাযুক্ত",
+            c: "বৃহৎ ও বহু ফ্ল্যাজেলাযুক্ত",
+            d: "বৃহৎ ও ১টি ফ্ল্যাজেলা",
+          },
+          correct: "c",
+          explanation:
+            "<i>Cycas</i> এর শুক্রাণু বৃহৎ এবং বহু ফ্ল্যাজেলাযুক্ত। এটি উদ্ভিদকুলের মধ্যে বৃহত্তম শুক্রাণুগুলোর অন্যতম।",
+        },
+        {
+          id: 29,
+          question: "<i>Cycas</i> উদ্ভিদের কোন অঙ্গটি সাপের কণার ন্যায়?",
+          options: {
+            a: "মেগাস্পোরোফিল",
+            b: "মাইক্রোস্পোরোফিল",
+            c: "স্ট্রোবিলাস",
+            d: "কোরালয়েড মূল",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i> উদ্ভিদের মেগাস্পোরোফিল (স্ত্রী রেণুপত্র) সাপের কণার ন্যায় দেখতে হয়। এটি ডিম্বক বহন করে এবং এর গঠন অনেকটা পালকের মতো কিন্তু প্রান্তে ডিম্বক উন্মুক্ত থাকে।",
+        },
+        {
+          id: 30,
+          question: "<i>Cycas</i>-এর সস্যে ক্রোমোজোম সেট সংখ্যা হলো-",
+          options: {
+            a: "১",
+            b: "২",
+            c: "৩",
+            d: "৪",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i>-এর সস্য (endosperm) হ্যাপ্লয়েড (n) প্রকৃতির, অর্থাৎ এতে ক্রোমোজোমের একটি সেট থাকে। এটি স্ত্রী গ্যামেটোফাইট থেকে নিষেকের পূর্বে তৈরি হয়।",
+        },
+        {
+          id: 31,
+          question: "<i>Cycas</i>-এর বৈশিষ্ট্য কোনটি?",
+          options: {
+            a: "কোরালয়েড মূল",
+            b: "ট্রিপ্লয়েড সস্য",
+            c: "ফল হয়",
+            d: "দ্বি-নিষেক ঘটে",
+          },
+          correct: "a",
+          explanation:
+            "<i>Cycas</i>-এর একটি গুরুত্বপূর্ণ বৈশিষ্ট্য হলো এর কোরালয়েড মূল বিদ্যমান, যেখানে সায়ানোব্যাকটেরিয়া বসবাস করে। এর সস্য হ্যাপ্লয়েড, এতে ফল হয় না এবং দ্বিনিষেক ঘটে না।",
+        },
+        {
+          id: 32,
+          question: "<i>Cycas</i>-এর স্ত্রী জননাঙ্গ কী নামে পরিচিত?",
+          options: {
+            a: "মাইক্রোস্পোরোফিল",
+            b: "মেগাস্পোরোফিল",
+            c: "স্ট্রোবিলাস",
+            d: "সোরাস",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas</i>-এর স্ত্রী জননাঙ্গ **মেগাস্পোরোফিল** নামে পরিচিত। এটি ডিম্বক বহন করে। মাইক্রোস্পোরোফিল হলো পুংজননাঙ্গ, স্ট্রোবিলাস হলো শংকু (পুং বা স্ত্রী) এবং সোরাস ফার্নের স্পোরাঞ্জিয়ামের গুচ্ছ।",
+        },
+        {
+          id: 33,
+          question: "নিম্নের কোন উদ্ভিদ হতে এরারুট বা বার্লি উৎপন্ন হয়?",
+          options: {
+            a: "<i>Cycas pectinata</i>",
+            b: "<i>Cycas circinalis</i>",
+            c: "<i>Cycas revoluta</i>",
+            d: "<i>Cycas beddomei</i>",
+          },
+          correct: "b",
+          explanation:
+            "<i>Cycas circinalis</i> উদ্ভিদ হতে এরারুট বা বার্লি উৎপন্ন হয়। এর কাণ্ডের মজ্জা থেকে স্টার্চ সংগ্রহ করে সাগু বা এরারুট তৈরি করা হয়।",
+        },
+        {
+          id: 34,
+          question: "নিষেকের পূর্বে কোনটিতে সস্য উৎপন্ন হয়?",
+          options: {
+            a: "মসে",
+            b: "ফার্নে",
+            c: "জিমনোস্পার্মে",
+            d: "এনজিওস্পার্মে",
+          },
+          correct: "c",
+          explanation:
+            "জিমনোস্পার্ম বা নগ্নবীজী উদ্ভিদে নিষেকের পূর্বে সস্য (endosperm) উৎপন্ন হয়। এটি হ্যাপ্লয়েড স্ত্রী গ্যামেটোফাইট থেকে তৈরি হয়। এনজিওস্পার্ম বা আবৃতবীজী উদ্ভিদে দ্বিনিষেকের ফলে ট্রিপ্লয়েড সস্য নিষেকের পরে গঠিত হয়। মস ও ফার্নে সস্য গঠিত হয় না।",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                        <label class="option" data-option="${option}">
+                          <div class="circle">${option}</div>
+                          <span class="option-text">${question.options[option]}</span>
+                        </label>
+                      `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                           <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                           <div class="explanation-content">
+                             <div class="explanation-label">ব্যাখ্যা:</div>
+                             ${question.explanation}
+                           </div>
+                         </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                      <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                      <div class="options">
+                        ${optionsHTML}
+                      </div>
+                      ${explanationHTML}
+                    `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
